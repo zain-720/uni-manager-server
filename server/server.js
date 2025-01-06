@@ -9,7 +9,7 @@ import dotenv from 'dotenv'
 //const __dirname = dirname(fileURLToPath(import.meta.url)); //get path to curent folder 
 
 const app = express(); 
-const port = 3000; // Change to online server friendly port
+const port = process.env.PORT || 3000; // Change to online server friendly port
 dotenv.config({path: 'server/.env'})//access the .env file
 dotenv.config() 
 
