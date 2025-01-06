@@ -4,27 +4,34 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import pg from "pg";
 import cors from "cors"; // To specifiy which url can make requests to the server
+import dotenv from 'dotenv'
 
-const __dirname = dirname(fileURLToPath(import.meta.url)); //get path to curent folder 
+//const __dirname = dirname(fileURLToPath(import.meta.url)); //get path to curent folder 
 
 const app = express(); 
-const port = 3000;
+const port = 3000; // Change to online server friendly port
+dotenv.config({path: 'server/.env'})//access the .env file
+dotenv.config() 
 
+// 3000 localHost testport
+// 443 HTTPS port, 80 HTTP port
 
-
-const corsOptions = {origin: ["http://localhost:5173"],
+// 
+// https://uni-manager.vercel.app
+const corsOptions = {origin: ['https://uni-manager-kgh8tj5ep-zains-projects-84ea1320.vercel.app', 'https://uni-manager.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }; //vite runs on 5173
 
 //User inputs whatever their password is for their postgres
-const db = new pg.Client({
-    user: "postgres",
-    host: "localhost",
-    database: "uni-management",
-    password: "72050h",
-    port: 5432,
+
+const db = new pg.Pool({
+    connectionString: process.env.POSTGRES_URL
 });
 db.connect();
+
+//const db = new pg.Client({
+    //connectionString: process.env.POSTGRES_URL
+//});
 
 app.use(cors(corsOptions)); //requests now only accepted from vite server
 app.use(bodyParser.json()); //parse incoming JSON bodies 
@@ -76,14 +83,14 @@ app.post('/acquireTodoLock', async (req, res) => {
     
     // If not locked, create a new lock
     todoLocks.set(username, Date.now());
-    console.log("acquired ", todoLocks);
+    //console.log("acquired ", todoLocks);
     res.status(200).json({ message: 'Lock acquired' });
 });
 
 //Post request for attempting to release a lock for username
 app.post('/releaseTodoLock', (req, res) => {
     const { username } = req.body;
-    console.log("released ", todoLocks);
+    //console.log("released ", todoLocks);
     todoLocks.delete(username);
     
     res.json({ message: 'Lock released' });
@@ -97,11 +104,12 @@ app.get('/requestLogin', async (req, res) => {
         const { username , password } = req.query;
         const result = await db.query('SELECT * FROM login_data WHERE username = $1 AND password = $2', [username, password]);
         //retrun true or false depending on if user entered correctly or not
+        //console.log(result.rows);
         if ((result.rows).length > 0) {
-            console.log('User found');
+            //console.log('User found');
             res.json({output: true});
         } else {
-            console.log('No user found');
+            //console.log('No user found');
             res.json({output: false});
         } 
     }
@@ -133,7 +141,7 @@ app.post("/requestCreation", async (req, res) => {
     catch(err){
         if(err.code === '23505'){
             console.error(err)
-            console.error("Same username attempted to add to the table")
+            //console.error("Same username attempted to add to the table")
         }
         else{
             console.error(err)
@@ -193,7 +201,7 @@ app.get('/requestTodoListData', async (req, res) => {
         const result = await db.query('SELECT * FROM todolist_data WHERE username = $1', [username]);
 
         //retrun the row containing the given users note data
-        console.log("todo list data ", result.rows[0]);
+        //console.log("todo list data ", result.rows[0]);
         res.json(result.rows[0]);
     }
     catch(err) {
