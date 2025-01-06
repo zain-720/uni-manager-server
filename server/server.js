@@ -101,10 +101,12 @@ app.post('/releaseTodoLock', (req, res) => {
 //Get request for finding if the user has entered valid credentials 
 app.get('/requestLogin', async (req, res) => {  
     try{
+
+        console.log("Connection ran as wanted good job");
         const { username , password } = req.query;
         const result = await db.query('SELECT * FROM login_data WHERE username = $1 AND password = $2', [username, password]);
         //retrun true or false depending on if user entered correctly or not
-        //console.log(result.rows);
+        
         if ((result.rows).length > 0) {
             //console.log('User found');
             res.json({output: true});
