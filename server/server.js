@@ -13,14 +13,9 @@ const port = process.env.PORT || 3000; // Change to online server friendly port
 dotenv.config({path: 'server/.env'})//access the .env file
 dotenv.config() 
 
-// 3000 localHost testport
-// 443 HTTPS port, 80 HTTP port
-
-// 
-// https://uni-manager.vercel.app
-const corsOptions = {origin: ['https://uni-manager-kgh8tj5ep-zains-projects-84ea1320.vercel.app', 'https://uni-manager.vercel.app'],
+const corsOptions = {origin: ['https://uni-manager-kgh8tj5ep-zains-projects-84ea1320.vercel.app', 'https://uni-manager.vercel.app', 'http://localhost:5173'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-}; //vite runs on 5173
+};
 
 //User inputs whatever their password is for their postgres
 
@@ -28,10 +23,6 @@ const db = new pg.Pool({
     connectionString: process.env.POSTGRES_URL
 });
 db.connect();
-
-//const db = new pg.Client({
-    //connectionString: process.env.POSTGRES_URL
-//});
 
 app.use(cors(corsOptions)); //requests now only accepted from vite server
 app.use(bodyParser.json()); //parse incoming JSON bodies 
@@ -43,6 +34,11 @@ const noteLocks = new Map();
 
 //Reasource lock to prevent race conditions when using TodoList, key is username, value is the date made
 const todoLocks = new Map();
+
+//Take/listen to the server warmup request
+app.get('/ping', (req, res) => {
+    res.status(200).send('pong');
+});
 
 //Post request for attempting to set a lock for username
 app.post('/acquireNoteLock', async (req, res) => {
@@ -102,7 +98,7 @@ app.post('/releaseTodoLock', (req, res) => {
 app.get('/requestLogin', async (req, res) => {  
     try{
 
-        console.log("Connection ran as wanted good job");
+        //console.log("Connection ran as wanted good job");
         const { username , password } = req.query;
         const result = await db.query('SELECT * FROM login_data WHERE username = $1 AND password = $2', [username, password]);
         //retrun true or false depending on if user entered correctly or not
