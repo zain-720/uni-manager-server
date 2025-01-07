@@ -13,7 +13,7 @@ const port = process.env.PORT || 3000; // Change to online server friendly port
 dotenv.config({path: 'server/.env'})//access the .env file
 dotenv.config() 
 
-const corsOptions = {origin: ['https://uni-manager-kgh8tj5ep-zains-projects-84ea1320.vercel.app', 'https://uni-manager.vercel.app', 'http://localhost:5173'],
+const corsOptions = {origin: [process.env.WHITELISTED_PAGE],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 };
 
