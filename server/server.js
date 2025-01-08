@@ -35,6 +35,9 @@ const noteLocks = new Map();
 //Reasource lock to prevent race conditions when using TodoList, key is username, value is the date made
 const todoLocks = new Map();
 
+//Reasource lock to prevent race conditions when using TodoList, key is username, value is the date made
+const scheduleLocks = new Map();
+
 //Take/listen to the server warmup request
 app.get('/ping', (req, res) => {
     res.status(200).send('pong');
@@ -92,7 +95,31 @@ app.post('/releaseTodoLock', (req, res) => {
     res.json({ message: 'Lock released' });
 });
 
+//Post request for attempting to set a lock for username
+app.post('/acquireScheduleLock', async (req, res) => {
+    const { username } = req.body;
+    
+    // Check if this username already has a lock
+    if (todoLocks.has(username)) {
+        // If locked, reject the request
+        res.status(423).json({ message: 'Resource locked' });
+        return;
+    }
+    
+    // If not locked, create a new lock
+    scheduleLocks.set(username, Date.now());
+    //console.log("acquired ", todoLocks);
+    res.status(200).json({ message: 'Lock acquired' });
+});
 
+//Post request for attempting to release a lock for username
+app.post('/releaseScheduleLock', (req, res) => {
+    const { username } = req.body;
+    //console.log("released ", todoLocks);
+    scheduleLocks.delete(username);
+    
+    res.json({ message: 'Lock released' });
+});
 
 //Get request for finding if the user has entered valid credentials 
 app.get('/requestLogin', async (req, res) => {  
@@ -221,6 +248,45 @@ app.put("/requestUpdateList", async (req, res) => {
         console.error(err)   
     }
 });
+
+
+//Get request to try to get user schedule list data
+app.get('/requestScheduleData', async (req, res) => {  
+    try{
+        const { username } = req.query;
+        const result = await db.query('SELECT * FROM schedule_data WHERE username = $1', [username]);
+
+        //retrun the row containing the given users note data
+        //console.log("todo list data ", result.rows[0]);
+        res.json(result.rows[0]);
+    }
+    catch(err) {
+        console.error(err)
+    }
+});
+
+//PUT request to try to update the schedule array 
+app.put("/requestUpdateSchedule", async (req, res) => {
+    try{
+        const { newData, username, nextKeyValue } = req.body;
+        //console.log("supposed to be new data", newData);
+        //console.log("supposed to be new" ,newKeyValue);
+        //console.log("JSON data", JSON.stringify(newData))
+
+        // Convert each day's array to a JSONB string
+        const jsonbArray = newData.map(day => JSON.stringify(day));
+
+        //console.log("JSON data2", jsonbArray)
+        
+        const result = await db.query("UPDATE schedule_data SET schedule = $1::jsonb[], key_number = $2 WHERE username = $3 RETURNING *;", [jsonbArray, nextKeyValue, username]); 
+        //console.log("done1");
+        res.send('Complete'); // REMINDER : always send back a response 
+    }    
+    catch(err){
+        console.error(err)   
+    }
+});
+
 
 
 //Listen on Port3000
